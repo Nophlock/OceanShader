@@ -3,7 +3,7 @@ extends Node
 
 
 @export_category("Godot Setup")
-@export_file("*.glsl") var shader_file = "res://shaders/fft_water.glsl"
+@export_file("*.glsl") var shader_file = "res://shaders/ft_water.glsl"
 @export var spectrum_node : Node = null
 @export var water_node : MeshInstance3D = null
 
@@ -68,9 +68,10 @@ func _process(delta):
 		self.run_compute()
 
 #load the compute shader
-func load_shader(device: RenderingDevice, path: String) -> RID:
-	var shader_file_data: RDShaderFile = load(path)
-	var shader_spirv: RDShaderSPIRV = shader_file_data.get_spirv()
+func load_shader(device : RenderingDevice, path: String) -> RID:
+	var shader_file_data : RDShaderFile = load(path)
+	var shader_spirv : RDShaderSPIRV = shader_file_data.get_spirv()
+	
 	return device.shader_create_from_spirv(shader_spirv)
 	
 	
@@ -81,12 +82,11 @@ func init_gpu(soft_clean : bool = false) -> void:
 	
 	#only create the render device once (ideally)
 	if soft_clean == false or rd == null:
-
 		if rd != null:
 			self.cleanup_gpu()
 			
 		rd = RenderingServer.create_local_rendering_device()
-		shader_rid = load_shader(rd, shader_file)
+		shader_rid = self.load_shader(rd, self.shader_file)
 	else:
 		self.soft_cleanup_gpu()
 
@@ -322,4 +322,4 @@ func run_compute() -> void:
 func _notification(what):
 	# Object destructor, triggered before the engine deletes this Node.
 	if what == NOTIFICATION_PREDELETE:
-		cleanup_gpu()
+		self.cleanup_gpu()

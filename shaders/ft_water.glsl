@@ -12,7 +12,7 @@ layout(set = 0, binding = 3, rg32f) restrict uniform image2D SLOPE_TEXTURE;
 layout(set = 0, binding = 4, rg32f) restrict uniform image2D DISPLACEMENT_TEXTURE;
 layout(set = 0, binding = 5, std430) readonly buffer parameters 
 {
-    float data[];
+	float data[];
 } Parameters;
 
 const float PI = 3.14159265358979323846;
@@ -61,7 +61,7 @@ vec2 h_tilde(vec2 idx, vec2 k)
 
 	float angle = dispersion(k) * Parameters.data[0]; 
 	
-    vec2 c_exp_1 = complex_exp(angle);
+	vec2 c_exp_1 = complex_exp(angle);
 	vec2 c_exp_2 = c_exp_1; //makes use of the even and off functionalities of cos and sin (we needed to do e^-ix which basicly only flips the sin)
 	c_exp_2.y *= -1.0f;
 	
@@ -69,10 +69,8 @@ vec2 h_tilde(vec2 idx, vec2 k)
 }
 
 
-// Brute force inverse FFT (AI suggested way / probably wrong)...
-
-
-void run_ifft(in ivec2 coord, out vec2 height_result, out vec2 slope, out vec2 displacement)
+// Brute force inverse FT
+void run_ift(in ivec2 coord, out vec2 height_result, out vec2 slope, out vec2 displacement)
 {
 	ivec2 dim = imageSize(SPECTRUM_TEXTURE); //doesnt matter, all have the same size
 	
@@ -87,17 +85,17 @@ void run_ifft(in ivec2 coord, out vec2 height_result, out vec2 slope, out vec2 d
 	
 	float size = (dim.x * dim.y);
 	
-    for (float y = 0.0f; y < dim.y; y+=1.0f) 
+	for (float y = 0.0f; y < dim.y; y+=1.0f) 
 	{
-        for (float x = 0.0f; x < dim.x; x+=1.0f) 
+		for (float x = 0.0f; x < dim.x; x+=1.0f) 
 		{
 			vec2 k = calculate_k(x, y, dim);
 			float k_len = length(k);
 			
-            vec2 h = h_tilde(vec2(x,y), k);
+			vec2 h = h_tilde(vec2(x,y), k);
 			float angle = dot(k, xv);
 			
-            vec2 c_exp = complex_exp(angle);
+			vec2 c_exp = complex_exp(angle);
 			vec2 h_cmp = complex_mul(h, c_exp);
 			
 			
@@ -116,8 +114,8 @@ void run_ifft(in ivec2 coord, out vec2 height_result, out vec2 slope, out vec2 d
 			
 			displacement_x += complex_mul(vec2(0.0, displacement_cmplx.x), h_cmp ) ;
 			displacement_y += complex_mul(vec2(0.0, displacement_cmplx.y), h_cmp ) ;
-        }
-    }
+		}
+	}
 
 	height_result /= size;
 	slope_x /= size;
@@ -132,20 +130,20 @@ void run_ifft(in ivec2 coord, out vec2 height_result, out vec2 slope, out vec2 d
 
 void main() 
 {
-    ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
 	
 	vec2 height_cplx = vec2(0.0f);
 	vec2 slope = vec2(0.0f);
 	vec2 displacement = vec2(0.0f);
 	
-	run_ifft(coord, height_cplx, slope, displacement);
+	run_ift(coord, height_cplx, slope, displacement);
 	
 	vec4 height_pixel = vec4(height_cplx.x, 0.0f,0.0f, 0.0f);
 	vec4 slope_pixel = vec4(slope.x, slope.y,0.0f, 0.0f);
 	vec4 displacement_pixel = vec4(displacement.x, displacement.y,0.0f, 0.0f);
 	
 	
-    imageStore(OUTPUT_TEXTURE, coord, height_pixel);
+	imageStore(OUTPUT_TEXTURE, coord, height_pixel);
 	imageStore(SLOPE_TEXTURE, coord, slope_pixel);
 	imageStore(DISPLACEMENT_TEXTURE, coord, displacement_pixel);
 }
